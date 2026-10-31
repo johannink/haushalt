@@ -1,5 +1,5 @@
 /* Service Worker: macht die App offline nutzbar. Nach Änderungen an den Dateien VERSION erhöhen. */
-const VERSION = 'abo-v6';
+const VERSION = 'abo-v7';
 const SHELL = ['./', 'index.html', 'config.js', 'supabase.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   if (url.origin === self.location.origin) {
     /* Eigene Dateien: erst Netz (damit Änderungen ankommen), sonst Zwischenspeicher */
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
