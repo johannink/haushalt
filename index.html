@@ -166,6 +166,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 .dc-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 14px}
 .dc-head h2{font-size:1.25rem}
 .dc-sub{font-size:.82rem;margin-top:2px}
+.piggy{display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--accent-soft);font-size:1.9rem;line-height:1;flex:none}
 .seg-ctl{display:inline-flex;padding:3px;background:var(--soft);border-radius:12px;gap:2px}
 .seg-ctl button{min-height:36px;padding:0 12px;border:0;border-radius:9px;background:none;color:var(--muted);font:600 .82rem/1 var(--f-body);cursor:pointer;white-space:nowrap}
 .seg-ctl button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
@@ -1698,7 +1699,8 @@ function renderOverview(ALL){
   const kpi=(cls,label,v,neg)=>el('div',{class:'kpi '+cls},el('dt',{text:label}),el('dd',{class:neg?'neg':'',text:EUR0.format(v)}));
   const card=el('section',{class:'panel donut-card','aria-label':'Wohin das Geld geht'},
     el('div',{class:'dc-head'},
-      el('div',{},el('h2',{text:'Wohin das Geld geht'}),el('p',{class:'muted dc-sub',text:(ui.scope==='all'?'Ganzer Haushalt':scopeName())+' · pro Monat'}))
+      el('div',{},el('h2',{text:'Wohin das Geld geht'}),el('p',{class:'muted dc-sub',text:(ui.scope==='all'?'Ganzer Haushalt':scopeName())+' · pro Monat'})),
+      el('span',{class:'piggy','aria-hidden':'true',text:'🐷'})
     ),
     el('div',{class:'dc-body'},wrap,legend),
     el('dl',{class:'kpis'},
