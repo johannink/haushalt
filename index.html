@@ -640,7 +640,6 @@ button.pcard:hover{border-color:var(--line-strong)}
     <section id="summary" class="hero" aria-label="Kostenübersicht" hidden></section>
     <section id="alerts" class="sec" aria-label="Kündigungsfristen" hidden></section>
     <section id="people" class="sec" aria-label="Kosten nach Person" hidden></section>
-    <section id="spread" class="sec" aria-label="Verteilung nach Kategorie" hidden></section>
 
     <section class="sec" aria-label="Alle Abos">
       <div class="sec-head"><h2>Meine Abos</h2></div>
@@ -1367,7 +1366,6 @@ function renderSummary(E){
   if(!E.length){box.hidden=true;return;}
   const active=E.filter(s=>s.status==='active');
   const month=active.reduce((a,s)=>a+s.monthly,0);
-  const next30=active.reduce((a,s)=>a+sumWindow(s,30),0);
   const paused=E.filter(s=>s.status==='paused').length;
   const cancelled=E.filter(s=>s.status==='cancelled');
   const saved=cancelled.reduce((a,s)=>a+s.monthly,0);
@@ -1379,8 +1377,7 @@ function renderSummary(E){
     el('p',{class:'hero-num',text:EUR(month)}),
     el('dl',{class:'stats'},
       stat('Pro Jahr',EUR(month*12)),
-      stat('Aktive Abos',String(active.length)),
-      stat('Nächste 30 Tage',EUR(next30))
+      stat('Aktive Abos',String(active.length))
     ),
     notes.length?el('p',{class:'hero-note',text:notes.join(' ')}):null
   );
@@ -1409,31 +1406,6 @@ function renderAlerts(E){
         el('span',{class:'pill '+s.alert.level,text:s.alert.level==='crit'?'Frist verpasst':rel(s.deadline)})
       );
     }))
-  );
-  box.hidden=false;
-}
-
-function renderSpread(E){
-  const box=$('#spread');
-  const active=E.filter(s=>s.status==='active'&&s.monthly>0);
-  if(!active.length){box.hidden=true;return;}
-  const sums={};
-  active.forEach(s=>{const k=CAT[s.category]?s.category:'sonst';sums[k]=(sums[k]||0)+s.monthly;});
-  const total=Object.values(sums).reduce((a,b)=>a+b,0);
-  const rows=Object.keys(sums).map(k=>({cat:CAT[k],v:sums[k]})).sort((a,b)=>b.v-a.v);
-  const bar=el('div',{class:'bar',role:'img','aria-label':'Verteilung der monatlichen Kosten nach Kategorie'},
-    rows.map(r=>{const s=el('span',{class:'seg',title:r.cat.label+': '+EUR(r.v)});s.style.flexGrow=String(r.v);s.style.background='var(--c'+r.cat.c+')';return s;})
-  );
-  const legend=el('ul',{class:'legend'},rows.map(r=>
-    el('li',{},
-      el('span',{class:'nm'},catDot(r.cat.id),el('span',{text:r.cat.label})),
-      el('span',{class:'fill','aria-hidden':'true'}),
-      el('span',{class:'val',text:EUR(r.v)+' · '+Math.round(r.v/total*100)+' %'})
-    )
-  ));
-  setKids(box,
-    el('div',{class:'sec-head'},el('h2',{text:'Wohin das Geld geht'}),el('p',{text:'Aktive Abos, umgerechnet auf einen Monat.'})),
-    el('div',{class:'panel'},bar,legend)
   );
   box.hidden=false;
 }
@@ -2147,7 +2119,6 @@ function render(){
     renderSummary(A);
     renderAlerts(A);
     renderPeople(A);
-    renderSpread(A);
     renderOwnerFilter();
     renderChips(A);
     renderList(A);
