@@ -216,6 +216,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 .wl-ql{font:700 .95rem/1 var(--f-display);margin-bottom:12px}
 
 /* Auf einen Blick */
+.mbar{display:block;height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.mbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--hero-bg2),var(--gold))}
+.perday{opacity:.8}
+.insight.gad .in-val.sm{font-size:1.35rem}
 .insights{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .insight{display:flex;flex-direction:column;gap:5px;text-align:left;padding:18px 20px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease,border-color .18s}
 .insight:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--line-strong)}
@@ -383,13 +387,14 @@ button.kpi:focus-visible{outline:2px solid var(--focus)}
 .label{font-size:.78rem;font-weight:600;letter-spacing:.02em;color:var(--muted)}
 .hero-num{font-family:var(--f-display);font-weight:700;font-size:clamp(2.2rem,11vw,3.3rem);line-height:1.02;letter-spacing:-.03em;margin-top:6px}
 .hero-num.neg{color:var(--crit-ink)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:16px}
-.stat{min-width:0;padding:10px 12px;border-radius:12px;background:var(--soft)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+@media(max-width:420px){.stat dd{font-size:.95rem}.stat{padding:9px 8px}}
+.stat{min-width:0;padding:10px 10px;border-radius:12px;background:var(--soft)}
 .stat dt{font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:6px}
 .stat dd{font-family:var(--f-display);font-size:1.08rem;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stat.in dt::before,.stat.out dt::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--k-inc)}
 .stat.out dt::before{background:var(--k-exp)}
-@media (max-width:480px){.stats .stat:nth-child(3):last-child{grid-column:1/-1}.sb-label{display:none}.scopebar .chip{padding:0 12px}}
+@media (max-width:480px){.sb-label{display:none}.scopebar .chip{padding:0 12px}}
 .hero-note{font-size:.82rem;color:var(--muted);margin-top:14px;max-width:65ch}
 
 /* Dunkle Monatskarte */
@@ -882,6 +887,17 @@ button.pcard:hover{border-color:var(--line-strong)}
         <span class="hint strong" id="f-deadline"></span>
       </div>
 
+      <div class="pair" id="g-abo">
+        <div class="field">
+          <label for="f-remind">Erinnerung vor Fristende</label>
+          <select id="f-remind"><option value="7">1 Woche vorher</option><option value="14">2 Wochen vorher</option><option value="30">1 Monat vorher</option></select>
+        </div>
+        <div class="field">
+          <label for="f-use">Nutzt du es?</label>
+          <select id="f-use"><option value="">Keine Angabe</option><option value="often">Oft</option><option value="sometimes">Manchmal</option><option value="rare">Selten oder nie</option></select>
+        </div>
+      </div>
+
       <div class="field">
         <label for="f-note">Notiz (optional)</label>
         <textarea id="f-note" maxlength="500" placeholder="Kundennummer, Kündigungsadresse, Tarif …"></textarea>
@@ -1093,8 +1109,9 @@ function enrich(s){
   let alert=null;
   if(kind==='abo'&&s.status==='active'&&deadline&&dayDiff(fromISO(s.endDate),TODAY)>=0){
     const dd=dayDiff(deadline,TODAY);
-    if(dd<=14)alert={level:'crit',days:dd,passed:dd<0};
-    else if(dd<=30)alert={level:'warn',days:dd,passed:false};
+    const R=[7,14,30].includes(Number(s.remind))?Number(s.remind):14;
+    if(dd<=R)alert={level:'crit',days:dd,passed:dd<0};
+    else if(dd<=Math.max(30,R))alert={level:'warn',days:dd,passed:false};
   }
   const owner=(s.owner&&s.owner!==FAMILY&&members.some(m=>m.id===s.owner))?s.owner:FAMILY;
   return Object.assign({},s,{amount,iv,monthly,next:nextOccurrence(s),deadline,alert,owner,kind,cost,name:s.name||'Ohne Namen'});
@@ -1483,12 +1500,17 @@ function renderSummary(E){
   const saved=cancelled.reduce((a,s)=>a+s.monthly,0);
   const notes=[];
   if(cancelled.length)notes.push('Gekündigte Abos entsprechen '+EUR(saved)+' weniger pro Monat.');
+  const rare=active.filter(s=>s.use==='rare');
+  if(rare.length)notes.push('Tipp: '+rare.map(s=>s.name).join(', ')+' nutzt du kaum. Kündigen spart '+EUR(sum(rare.map(s=>s.monthly))*12)+' im Jahr.');
+  const hikes=active.filter(s=>s.prevAmount!=null&&s.amount>Number(s.prevAmount)&&Number(s.prevAmount)>0);
+  if(hikes.length)notes.push('Preiserhöhung bei '+hikes.map(s=>s.name).join(', ')+': Gibt es einen günstigeren Anbieter?');
   if(paused)notes.push((paused===1?'Ein pausiertes Abo ist':paused+' pausierte Abos sind')+' nicht eingerechnet.');
   setKids(box,
     el('p',{class:'label',text:'Pro Monat'}),
     el('p',{class:'hero-num',text:EUR(month)}),
     el('dl',{class:'stats'},
-      stat('Pro Jahr',EUR(month*12)),
+      stat('Pro Jahr',EUR0.format(month*12)),
+      stat('Pro Tag',EUR(month*12/365)),
       stat('Aktive Abos',String(active.length))
     ),
     notes.length?el('p',{class:'hero-note',text:notes.join(' ')}):null
@@ -1587,6 +1609,11 @@ function rowFor(s){
   }
   if(s.alert)dueBits.push(el('span',{class:'pill '+s.alert.level,text:s.alert.passed?'Frist verpasst':'Kündigen bis '+fmtDate(s.deadline)}));
   if(off)dueBits.push(el('span',{class:'pill',text:STATUS_LABEL[s.status]||s.status}));
+  if(s.status==='active'&&s.use==='rare')dueBits.push(el('span',{class:'pill warn',text:'Selten genutzt'}));
+  if(s.kind==='abo'&&s.prevAmount!=null&&Number(s.prevAmount)>0&&Number(s.prevAmount)!==s.amount){
+    const d=s.amount-Number(s.prevAmount);
+    dueBits.push(el('span',{class:'pill '+(d>0?'crit':'ok'),text:(d>0?'↑ +':'↓ ')+EUR(Math.abs(d))+' seit Preisänderung'}));
+  }
   if(s.example)dueBits.push(el('span',{class:'pill ok',text:'Beispiel'}));
   const cat=CAT[s.category]||CAT.sonst;
   return el('button',{class:'row'+(off?' off':''),type:'button',onclick:()=>openSheet(s.id)},
@@ -1599,7 +1626,8 @@ function rowFor(s){
     el('div',{class:'r-amt'},
       EUR(s.amount),
       el('small',{text:'pro '+s.iv.short}),
-      s.iv.months===1?null:el('small',{text:'≈ '+EUR(s.monthly)+' / Monat'})
+      s.iv.months===1?null:el('small',{text:'≈ '+EUR(s.monthly)+' / Monat'}),
+      s.kind==='abo'&&s.monthly>0?el('small',{class:'perday',text:'≈ '+EUR(s.monthly*12/365)+' / Tag'}):null
     )
   );
 }
@@ -2087,7 +2115,7 @@ function renderIncome(I){
   setKids(sum_,
     el('p',{class:'label',text:'Einnahmen pro Monat'}),
     el('p',{class:'hero-num',text:EUR(month)}),
-    el('dl',{class:'stats'},stat('Pro Jahr',EUR(month*12)),stat('Laufende Posten',String(cur.length)))
+    el('dl',{class:'stats'},stat('Pro Jahr',EUR0.format(month*12)),stat('Laufende Posten',String(cur.length)))
   );
   sum_.hidden=false;
   const rows=I.filter(e=>(ui.inOwner==='all'||e.owner===ui.inOwner)&&(ui.inCat==='all'||e.category===ui.inCat)).sort(byActiveThenCost);
@@ -2378,6 +2406,43 @@ function insightCards(ALL,o,cur,hasInc,absPart,calcPart){
       el('span',{class:'in-hint',text:'Tippen: Welche Abos kosten wie viel?'})
     ));
   }
+  /* Gadgets */
+  if(o.exp>0){
+    const day=o.exp*12/365;
+    cards.push(el('button',{class:'insight gad',type:'button',onclick:()=>setTab('expense')},
+      el('span',{class:'in-label',text:'☀️  Dein Tag kostet'}),
+      el('span',{class:'in-val',text:EUR(day)}),
+      el('span',{class:'in-sub',text:'Jeden Tag gehen im Schnitt '+EUR(day)+' fest raus. Pro Woche sind das '+EUR(day*7)+'.'})
+    ));
+  }
+  if(up.length){
+    const nx=up[0],dd=dayDiff(nx.date,TODAY);
+    cards.push(el('button',{class:'insight gad',type:'button',onclick:()=>openSheet(nx.e.id)},
+      el('span',{class:'in-label',text:'⏳  Nächste Zahlung'}),
+      el('span',{class:'in-val',text:dd===0?'Heute':dd===1?'Morgen':'In '+dd+' Tagen'}),
+      el('span',{class:'in-sub',text:nx.e.name+' · '+EUR(nx.amount)})
+    ));
+  }
+  {
+    const dim=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate(),left=dim-TODAY.getDate()+1;
+    const rest=upcoming(ALL.filter(isCurrentOrActive),ui.scope,left);
+    const rs=sum(rest.map(r=>r.amount));
+    const prog=Math.round(TODAY.getDate()/dim*100);
+    if(rest.length)cards.push(el('button',{class:'insight gad',type:'button',onclick:()=>openBd({label:'Noch fällig bis Monatsende',emoji:'🗓️',color:'var(--accent)',v:rs,dated:true,rows:rest})},
+      el('span',{class:'in-label',text:'🗓️  Bis Monatsende'}),
+      el('span',{class:'in-val',text:EUR0.format(rs)}),
+      el('span',{class:'in-sub',text:rest.length+(rest.length===1?' Zahlung steht':' Zahlungen stehen')+' noch an · Monat zu '+prog+' % rum'}),
+      el('span',{class:'mbar'},el('i',{style:'width:'+prog+'%'}))
+    ));
+  }
+  {
+    const top=cur.filter(e=>e.kind==='abo').sort((a,b)=>b.monthly-a.monthly)[0];
+    if(top)cards.push(el('button',{class:'insight gad',type:'button',onclick:()=>openSheet(top.id)},
+      el('span',{class:'in-label',text:'💡  Spar-Check'}),
+      el('span',{class:'in-val sm',text:top.name}),
+      el('span',{class:'in-sub',text:'Dein teuerstes Abo: '+EUR0.format(top.monthly*12)+' im Jahr. Brauchst du es wirklich?'})
+    ));
+  }
   if(hasInc){
     const pct=Math.round((o.inc-o.exp)/o.inc*100),rt=rateOf(pct);
     cards.push(el('button',{class:'insight in-rate',type:'button',onclick:()=>openBd(calcPart)},
@@ -2434,15 +2499,14 @@ function openBd(part){
       xIcon())
   );
   const kids=[head];
-  const total=el('div',{class:'bd-total'},el('span',{class:'muted',text:part.totalLabel||'pro Monat'}),el('strong',{text:EUR(part.v)}));
   let sub='';
   if(part.dated){
     sub=part.rows.length+(part.rows.length===1?' Zahlung':' Zahlungen')+' bis '+fmtShort(addDays(TODAY,13));
-    kids.push(total,el('div',{class:'bd-list'},part.rows.map(r=>bdDated(r))),
+    kids.push(el('div',{class:'bd-list'},part.rows.map(r=>bdDated(r))),el('div',{class:'bd-sum'},el('span',{text:'Summe'}),el('b',{text:EUR(part.v)})),
       el('p',{class:'bd-hint muted',text:'Nur Ausgaben und Abos. Jeder Betrag ist die tatsächliche Zahlung, nicht der Monatswert.'}));
   }else if(part.calc){
     sub='So setzt sich der Rest zusammen';
-    kids.push(total,el('ul',{class:'bd-calc'},
+    kids.push(el('ul',{class:'bd-calc'},
       el('li',{},el('span',{text:'Einnahmen'}),el('b',{text:'+ '+EUR(part.inc)})),
       el('li',{},el('span',{text:'Ausgaben'}),el('b',{text:'− '+EUR(part.exp)})),
       el('li',{class:'sum'},el('span',{text:'Übrig'}),el('b',{text:EUR(part.inc-part.exp)}))
@@ -2451,7 +2515,6 @@ function openBd(part){
     const items=(part.items||[]).slice().sort((a,b)=>b.monthly-a.monthly);
     const tot=sum(items.map(e=>e.monthly));
     sub=items.length+(items.length===1?' Posten':' Posten')+(part.group?' in '+new Set(items.map(e=>e.kind==='abo'?'Abos':catOf('expense',e.category).label)).size+' Kategorien':'');
-    kids.push(total);
     if(part.group){
       const groups={};
       items.forEach(e=>{const k=e.kind==='abo'?'Abos':catOf('expense',e.category).label;(groups[k]=groups[k]||[]).push(e);});
@@ -2462,7 +2525,7 @@ function openBd(part){
     }else{
       kids.push(el('div',{class:'bd-list'},items.length?items.map(e=>bdRow(e,tot)):el('p',{class:'muted',text:'Keine Einträge.'})));
     }
-    if(items.length>1)kids.push(el('div',{class:'bd-sum'},el('span',{text:'Summe'}),el('b',{text:EUR(tot)})));
+    if(items.length>0)kids.push(el('div',{class:'bd-sum'},el('span',{text:'Summe'}),el('b',{text:EUR(tot)})));
     kids.push(el('p',{class:'bd-hint muted',text:'Jährliche und andere Zahlungen sind auf einen Monat umgerechnet. Tippe auf einen Eintrag, um ihn zu bearbeiten.'}));
   }
   setKids($('#bd-body'),...kids);
@@ -2543,7 +2606,7 @@ function exportICS(){
       'SUMMARY:'+esc('Kündigen: '+e.name),
       'DESCRIPTION:'+esc('Letzter Tag für die Kündigung von '+e.name+'. Der Vertrag läuft bis '+fmtDate(fromISO(e.endDate))+'.'),
       'TRANSP:TRANSPARENT',
-      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc('In 2 Wochen endet die Kündigungsfrist: '+e.name),'TRIGGER:-P13DT15H','END:VALARM',
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc('Bald endet die Kündigungsfrist: '+e.name),'TRIGGER:-P'+(Math.max(1,(Number(e.remind)||14)-1))+'DT15H','END:VALARM',
       'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc('Morgen ist der letzte Kündigungstag: '+e.name),'TRIGGER:-PT15H','END:VALARM',
       'END:VEVENT');
   });
@@ -2857,7 +2920,7 @@ async function buildPdf(){
 /* ---------- Formular ---------- */
 const f={
   kind:$('#f-kind'),name:$('#f-name'),amount:$('#f-amount'),interval:$('#f-interval'),category:$('#f-category'),owner:$('#f-owner'),status:$('#f-status'),cost:$('#f-cost'),
-  next:$('#f-next'),start:$('#f-start'),nv:$('#f-notice-v'),nu:$('#f-notice-u'),end:$('#f-end'),note:$('#f-note'),
+  remind:$('#f-remind'),use:$('#f-use'),next:$('#f-next'),start:$('#f-start'),nv:$('#f-notice-v'),nu:$('#f-notice-u'),end:$('#f-end'),note:$('#f-note'),
   err:$('#f-err'),save:$('#f-save'),del:$('#f-del'),deadline:$('#f-deadline')
 };
 let editingId=null,lastFocus=null,saving=false,delArmed=false,curEmoji='';
@@ -2908,7 +2971,7 @@ function applyKind(){
   fillSelect(f.status,[['active','Aktiv'],['paused','Pausiert'],['cancelled',k==='abo'?'Gekündigt':'Beendet']]);
   f.status.value=st;
   $('#g-cost').hidden=true;
-  $('#g-notice').hidden=k!=='abo';
+  $('#g-notice').hidden=k!=='abo';$('#g-abo').hidden=k!=='abo';
   f.deadline.hidden=k!=='abo';
   $('#l-next').textContent=k==='income'?'Nächster Eingang':(k==='abo'?'Nächste Abbuchung':'Nächste Zahlung');
   $('#l-end').textContent=k==='abo'?'Vertrag läuft bis (optional)':'Läuft bis (optional)';
@@ -2945,6 +3008,8 @@ function openSheet(id,kind){
   f.nu.value=s&&UNIT_NAMES[s.noticeUnit]?s.noticeUnit:'days';
   f.end.value=s&&validISO(s.endDate)?s.endDate:'';
   f.note.value=s?(s.note||''):'';
+  f.remind.value=String([7,14,30].includes(Number(s&&s.remind))?Number(s.remind):14);
+  f.use.value=s&&['often','sometimes','rare'].includes(s.use)?s.use:'';
   curEmoji=s&&s.emoji?String(s.emoji):'';
   toggleEmoji(false);
   renderEmoji();
@@ -2989,9 +3054,14 @@ async function saveSub(){
     note:f.note.value.trim().slice(0,500),
     emoji:curEmoji
   };
+  if(abo){data.remind=Number(f.remind.value)||14;data.use=f.use.value;}
   if(kind==='expense')data.cost=f.cost.value==='variabel'?'variabel':'fix';
   const old=editingId?findRec(editingId):null;
   if(old&&old.example)data.example=true;
+  if(abo&&old){
+    if(Number(old.amount)!==data.amount&&Number(old.amount)>0&&old.interval===data.interval)data.prevAmount=Number(old.amount);
+    else if(old.prevAmount!=null)data.prevAmount=Number(old.prevAmount);
+  }
   saving=true;f.save.disabled=true;showErr('');
   try{
     await backend.save(editingId||newId(),data);

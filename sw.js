@@ -1,5 +1,5 @@
 /* Service Worker: macht die App offline nutzbar. Nach Änderungen an den Dateien VERSION erhöhen. */
-const VERSION = 'abo-v15';
+const VERSION = 'abo-v16';
 const SHELL = ['./', 'index.html', 'config.js', 'supabase.js', 'fonts/app.woff2', 'jspdf.min.js', 'jspdf-autotable.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
