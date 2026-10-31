@@ -1,6 +1,6 @@
 /* Service Worker: macht die App offline nutzbar. Nach Änderungen an den Dateien VERSION erhöhen. */
-const VERSION = 'abo-v10';
-const SHELL = ['./', 'index.html', 'config.js', 'supabase.js', 'jspdf.min.js', 'jspdf-autotable.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
+const VERSION = 'abo-v12';
+const SHELL = ['./', 'index.html', 'config.js', 'supabase.js', 'fonts/plex-400.woff2', 'fonts/plex-500.woff2', 'fonts/plex-600.woff2', 'fonts/fraunces.woff2', 'jspdf.min.js', 'jspdf-autotable.min.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
