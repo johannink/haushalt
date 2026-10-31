@@ -6,6 +6,6 @@
   NIEMALS den "service_role"- oder "secret"-Schlüssel hier eintragen.
 */
 window.ABO_CONFIG = {
-  url: '',      // z. B. 'https://abcdefghijkl.supabase.co'
-  anonKey: ''   // z. B. 'sb_publishable_...'
+  url: 'https://pqqpagbgpfvjylprhisc.supabase.co',      // z. B. 'https://abcdefghijkl.supabase.co'
+  anonKey: 'sb_publishable_yO0cel0JJmnkZEFfq9_i5Q_4Nyw0rJP'   // z. B. 'sb_publishable_...'
 };
